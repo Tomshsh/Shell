@@ -23,9 +23,9 @@ int main()
 			}
 
 			if (exit_code == '0')
-				std::cout << "Exit with status 0 (success)" << std::endl;
+				exit_code = 0;
 			if (exit_code == '1')
-				std::cout << "Exit with status 1 (error)" << std::endl;
+				exit_code = 1;
 			
 			exit(exit_code);
 		}
