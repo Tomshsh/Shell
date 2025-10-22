@@ -30,6 +30,14 @@ int main()
 			exit(exit_code);
 		}
 
-		std::cout << input << ": command not found" << std::endl;
+		else if (input.compare(0, 4, "echo") == 0)
+		{
+			printf("%s\n", input.data() + 5);
+		}
+
+
+		else {
+			std::cout << input << ": command not found" << std::endl;
+		}
 	}
 }
