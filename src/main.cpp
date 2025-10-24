@@ -1,5 +1,78 @@
 #include <iostream>
 #include <string>
+#include <unordered_map>
+#include <sstream>
+
+enum command_type
+{
+	BUILTIN
+};
+
+struct Command
+{
+	std::string command;
+	command_type type;
+	std::function<void(std::stringstream&)> cb;
+
+	Command(std::string cmd, command_type cmd_type, std::function<void(std::stringstream&)> callback) : command(cmd), type(cmd_type), cb(std::move(callback)) {};
+};
+
+std::unordered_map<std::string, Command> commandMap;
+
+std::string TypeToStr(command_type cmd)
+{
+	switch (cmd)
+	{
+	case BUILTIN:
+		return "builtin";
+
+	default:
+		break;
+	}
+}
+
+void handleExit(std::stringstream& ss)
+{
+	std::string code;
+	ss >> code;
+	int exit_code = 0;
+	if (code.length() > 0)
+	{
+		if (!(code.at(0) == '0' || code.at(0) == 1))
+		{
+			printf("exit: invalid argument\n");
+			return;
+		}
+		exit_code = code.at(0) - '0';
+	}
+	exit(exit_code);
+}
+
+void handleEcho(std::stringstream& ss)
+{
+	ss.seekg(5);
+	std::cout << ss.rdbuf() << "\n";
+}
+
+void handleType(std::stringstream& ss)
+{
+	std::string com;
+	ss >> com;
+	auto it = commandMap.find(com);
+	if (it == commandMap.end()){
+		printf("%s: not found\n", com.c_str());
+		return;
+	}
+	printf("%s is a shell %s\n", com.c_str(), TypeToStr(it->second.type).c_str());
+}
+
+void initCommandMap() {
+	commandMap = {
+		{"exit", Command("exit", BUILTIN, handleExit)},
+		{"echo", Command("echo", BUILTIN, handleEcho)},
+		{"type", Command("type", BUILTIN, handleType)}
+	};
+}
 
 int main()
 {
@@ -7,40 +80,22 @@ int main()
 	std::cout << std::unitbuf;
 	std::cerr << std::unitbuf;
 
+	initCommandMap();
+
 	while (true)
 	{
 		std::cout << "$ ";
 
 		std::string input;
 		std::getline(std::cin, input);
-		
-		if (input.compare(0, 4, "exit") == 0)
-		{
-			int exit_code = '0';
-			if (input.length() > 5)
-			{
-				exit_code = input.at(5);
-			}
-			if (exit_code == '0' || exit_code == '1')
-			{
-				exit_code = exit_code - '0';
-			exit(exit_code);
-			}
-			else
-				printf("exit: bad argument\n");
-		}
+		std::stringstream ss(input);
+		std::string word;
+		ss >> word;
 
-		else if (input.compare(0, 4, "echo") == 0)
+		auto it = commandMap.find(word);
+		if (it != commandMap.end())
 		{
-			printf("%s\n", input.data() + 5);
-		}
-
-		else if (input.compare(0, 4, "type") == 0)
-		{
-			if (input.compare(5, 4, "echo") == 0 || input.compare(5, 4, "exit") == 0 || input.compare(5, 4, "type") == 0)
-				printf("%s is a shell builtin\n", input.c_str() + 5);
-			else
-				printf("%s: not found\n", input.c_str() + 5);
+			it->second.cb(ss);
 		}
 
 		else
