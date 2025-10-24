@@ -2,6 +2,7 @@
 #include <string>
 #include <unordered_map>
 #include <sstream>
+#include <functional>
 
 enum command_type
 {
