@@ -6,6 +6,7 @@
 #include <vector>
 #include <filesystem>
 #include <unistd.h>
+#include <cstring>
 
 namespace fs = std::filesystem;
 
