@@ -103,6 +103,7 @@ void handleType(std::stringstream &ss)
 	if (it != commandMap.end())
 	{
 		printf("%s is a shell %s\n", com.c_str(), TypeToStr(it->second.type).c_str());
+		return;
 	}
 	else
 	{
