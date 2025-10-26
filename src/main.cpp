@@ -173,6 +173,7 @@ int main()
 		{
 			std::string arg;
 			std::vector<char *> args;
+			args.push_back(word.data());
 			while (ss){
 				ss >> arg;
 				args.push_back(arg.data());
