@@ -173,11 +173,16 @@ int main()
 		else
 		{
 			std::string arg;
-			std::vector<char *> args;
-			args.push_back(word.data());
+			std::vector<std::string> args;
+			std::vector<char *> c_args;
+			
+			args.push_back(word);
 			while (ss >> arg)
-				args.push_back(arg.data());
-				
+				args.push_back(arg);
+			
+			for (const auto& a : args)
+				c_args.push_back(const_cast<char *>(a.c_str()));
+
 			std::vector<std::string> split_path = split(env_p, path_delimiter);
 			bool found = false;
 			for (std::string str : split_path)
@@ -197,11 +202,14 @@ int main()
 							printf("fork failed\n");
 						else if (pid == 0)
 						{
-							execvp(word.data(), args.data());
+							execvp(dir_entry.path().c_str(), c_args.data());
+							perror("execvp failed");
+							exit(1);
 						}
 						else
 						{
-							wait(NULL);
+							int status;
+							waitpid(pid, &status, 0);
 						}
 						break;
 					}
