@@ -9,7 +9,6 @@
 #include <cstring>
 #include <sys/wait.h>
 
-
 namespace fs = std::filesystem;
 
 /////////////////////////////# DECLARATIONS #///////////////////////////////
@@ -30,19 +29,20 @@ struct Command
 
 std::unordered_map<std::string, Command> commandMap;
 
-const char *path_delimiter = []{
-	#ifdef _WIN32
-		return ";";
-	#else
-		return ":";
-	#endif
+const char *path_delimiter = []
+{
+#ifdef _WIN32
+	return ";";
+#else
+	return ":";
+#endif
 }();
 
 char *p_env = {};
 
 /////////////////////////////# UTILS #///////////////////////////////
 
-std::string TypeToStr(command_type cmd)
+std::string typeToStr(command_type cmd)
 {
 	switch (cmd)
 	{
@@ -68,6 +68,30 @@ std::vector<std::string> split(std::string str, std::string delim)
 	}
 
 	return arr;
+}
+
+std::string findDirInPath(std::string word)
+{
+	std::string env_p(p_env);
+	std::vector<std::string> split_path = split(env_p, path_delimiter);
+	for (std::string str : split_path)
+	{
+		const fs::path pth(str);
+		if (!fs::exists(pth))
+			continue;
+
+		for (auto const &dir_entry : fs::recursive_directory_iterator(pth, fs::directory_options::skip_permission_denied))
+		{
+			if (word == dir_entry.path().filename().string())
+			{
+				if (access(dir_entry.path().c_str(), X_OK) != 0)
+					continue; // is not executable
+				return dir_entry.path().c_str();
+			}
+		}
+	}
+
+	return {};
 }
 
 /////////////////////////////# METHODS #///////////////////////////////
@@ -105,32 +129,19 @@ void handleType(std::stringstream &ss)
 	auto it = commandMap.find(com);
 	if (it != commandMap.end())
 	{
-		printf("%s is a shell %s\n", com.c_str(), TypeToStr(it->second.type).c_str());
+		printf("%s is a shell %s\n", com.c_str(), typeToStr(it->second.type).c_str());
 		return;
 	}
 	else
 	{
-		std::vector<std::string> arr = split(env_p, path_delimiter);
-		for (std::string str : arr)
+		std::string dir_entry = findDirInPath(com);
+		if (dir_entry.length())
 		{
-			const fs::path pth(str);
-			if (!fs::exists(pth))
-				continue;
-
-			for (auto const &dir_entry : fs::recursive_directory_iterator(pth, fs::directory_options::skip_permission_denied))
-			{
-				if (com == dir_entry.path().filename().string())
-				{
-					if (access(dir_entry.path().c_str(), X_OK) != 0) continue;	// is not executable
-
-					std::cout << com << " is " << dir_entry.path().string() << "\n";
-					return;
-				}
-			}
+			std::cout << com << " is " << dir_entry << "\n";
+			return;
 		}
 	}
 	printf("%s: not found\n", com.c_str());
-	return;
 }
 
 /////////////////////////////# MAIN #///////////////////////////////
@@ -150,7 +161,6 @@ int main()
 	std::cerr << std::unitbuf;
 
 	initCommandMap();
-
 
 	p_env = std::getenv("PATH");
 	std::string env_p = p_env ? p_env : "";
@@ -175,49 +185,35 @@ int main()
 			std::string arg;
 			std::vector<std::string> args;
 			std::vector<char *> c_args;
-			
+
 			args.push_back(word);
 			while (ss >> arg)
 				args.push_back(arg);
-			
-			for (const auto& a : args)
+
+			for (const auto &a : args)
 				c_args.push_back(const_cast<char *>(a.c_str()));
 
-			std::vector<std::string> split_path = split(env_p, path_delimiter);
-			bool found = false;
-			for (std::string str : split_path)
+			std::string dir_entry = findDirInPath(word);
+			if (dir_entry.empty())
 			{
-				const fs::path pth(str);
-				if (found) break;
-				if (!fs::exists(pth)) continue;
-
-				for (auto const &dir_entry : fs::recursive_directory_iterator(pth, fs::directory_options::skip_permission_denied))
-				{
-					if (word == dir_entry.path().filename().string())
-					{
-						if (access(dir_entry.path().c_str(), X_OK) != 0) continue;	// is not executable
-						found = true;
-						pid_t pid = fork();
-						if (pid == -1)
-							printf("fork failed\n");
-						else if (pid == 0)
-						{
-							execvp(dir_entry.path().c_str(), c_args.data());
-							perror("execvp failed");
-							exit(1);
-						}
-						else
-						{
-							int status;
-							waitpid(pid, &status, 0);
-						}
-						break;
-					}
-				}
+				std::cout << word << ": command not found\n";
+				continue;
 			}
 
-			if (!found)
-				std::cout << word << ": command not found\n";
+			pid_t pid = fork();
+			if (pid == -1)
+				printf("fork failed\n");
+			else if (pid == 0)
+			{
+				execvp(dir_entry.c_str(), c_args.data());
+				perror("execvp failed");
+				exit(1);
+			}
+			else
+			{
+				int status;
+				waitpid(pid, &status, 0);
+			}
 		}
 	}
 }
