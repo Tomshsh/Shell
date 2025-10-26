@@ -118,18 +118,17 @@ void handleType(std::stringstream &ss)
 			{
 				if (com == dir_entry.path().filename().string())
 				{
-					if (access(dir_entry.path().c_str(), X_OK) == 0)	// is executable
-					{
-						std::cout << com << " is " << dir_entry.path().string() << "\n";
-						return;
-					}
+					if (access(dir_entry.path().c_str(), X_OK) != 0) continue;	// is not executable
+
+					std::cout << com << " is " << dir_entry.path().string() << "\n";
+					return;
 				}
 			}
 		}
 	}
-		printf("%s: not found\n", com.c_str());
-		return;
-	}
+	printf("%s: not found\n", com.c_str());
+	return;
+}
 
 /////////////////////////////# MAIN #///////////////////////////////
 
@@ -168,10 +167,46 @@ int main()
 		{
 			it->second.cb(ss);
 		}
-
 		else
 		{
-			std::cout << input << ": command not found" << std::endl;
+			std::string arg;
+			std::vector<char *> args;
+			while (ss){
+				ss >> arg;
+				args.push_back(arg.data());
+			}
+			std::vector<std::string> split_path = split(env_p, path_delimiter);
+			bool found = false;
+			for (std::string str : split_path)
+			{
+				const fs::path pth(str);
+				if (found) break;
+				if (!fs::exists(pth)) continue;
+
+				for (auto const &dir_entry : fs::recursive_directory_iterator(pth, fs::directory_options::skip_permission_denied))
+				{
+					if (word == dir_entry.path().filename().string())
+					{
+						if (access(dir_entry.path().c_str(), X_OK) != 0) continue;	// is not executable
+						found = true;
+						pid_t pid = fork();
+						if (pid == -1)
+							printf("fork failed\n");
+						else if (pid == 0)
+						{
+							execvp(word.data(), args.data());
+						}
+						else
+						{
+							wait(NULL);
+						}
+						break;
+					}
+				}
+			}
+
+			if (!found)
+				std::cout << word << ": command not found\n";
 		}
 	}
 }
