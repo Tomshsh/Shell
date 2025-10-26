@@ -50,6 +50,7 @@ std::string TypeToStr(command_type cmd)
 		return "builtin";
 
 	default:
+		return "";
 		break;
 	}
 }
@@ -174,10 +175,9 @@ int main()
 			std::string arg;
 			std::vector<char *> args;
 			args.push_back(word.data());
-			while (ss){
-				ss >> arg;
+			while (ss >> arg)
 				args.push_back(arg.data());
-			}
+				
 			std::vector<std::string> split_path = split(env_p, path_delimiter);
 			bool found = false;
 			for (std::string str : split_path)
