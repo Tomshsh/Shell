@@ -7,6 +7,8 @@
 #include <filesystem>
 #include <unistd.h>
 #include <cstring>
+#include <sys/wait.h>
+
 
 namespace fs = std::filesystem;
 
