@@ -22,9 +22,9 @@ struct Command
 {
 	std::string command;
 	command_type type;
-	std::function<void(std::stringstream &)> cb;
+	std::function<void(std::vector<std::string> &)> cb;
 
-	Command(std::string cmd, command_type cmd_type, std::function<void(std::stringstream &)> callback) : command(cmd), type(cmd_type), cb(std::move(callback)) {};
+	Command(std::string cmd, command_type cmd_type, std::function<void(std::vector<std::string> &)> callback) : command(cmd), type(cmd_type), cb(std::move(callback)) {};
 };
 
 std::unordered_map<std::string, Command> commandMap;
@@ -94,16 +94,54 @@ std::string findDirInPath(std::string word)
 	return {};
 }
 
+std::vector<std::string> parseArgs(std::string &line)
+{
+	std::string arg;
+	std::vector<std::string> args;
+	for (auto it = line.begin(); it != line.end(); ++it)
+	{
+		if (*it == ' ' || *it == '\0')
+		{
+			args.push_back(arg);
+			arg = "";
+		}
+		else if (*it == '\'')
+		{
+			size_t startPos = it - line.begin() + 1;  // skip the character in check
+			size_t endPos = line.rfind('\'');
+			if (endPos == startPos -1)
+			{
+				arg += *it;
+				continue;
+			}
+			arg += line.substr(startPos, endPos - startPos);
+			it = line.begin() + endPos;   // now *it == '\'', but next iteration will set it to one character after
+		}
+		else
+		{
+			arg += *it;
+		}
+	}
+	return args;
+}
+
 /////////////////////////////# METHODS #///////////////////////////////
 
-void handleExit(std::stringstream &ss)
+void handleExit(std::vector<std::string> &vec)
 {
-	std::string code;
-	ss >> code;
+	if (vec.size() > 2)
+	{
+		printf("exit: too many arguments\n");
+		return;
+	}
+	if (vec.size() < 2)
+		exit(0);
+
+	std::string code = vec.at(1);
 	int exit_code = 0;
 	if (code.length() > 0)
 	{
-		if (!(code.at(0) == '0' || code.at(0) == 1))
+		if (code.length() > 1 || !(code.at(0) == '0' || code.at(0) == '1'))
 		{
 			printf("exit: invalid argument\n");
 			return;
@@ -113,35 +151,36 @@ void handleExit(std::stringstream &ss)
 	exit(exit_code);
 }
 
-void handleEcho(std::stringstream &ss)
+void handleEcho(std::vector<std::string> &vec)
 {
-	ss.seekg(5);
-	std::cout << ss.rdbuf() << "\n";
+	for (auto it = vec.begin() + 1; it != vec.end(); ++it)
+		std::cout << *it << ' ';
+	std::cout << "\n";
 }
 
-void handleType(std::stringstream &ss)
+void handleType(std::vector<std::string> &vec)
 {
-	std::string com;
-	ss >> com;
-
-	std::string env_p = p_env ? p_env : "";
-
-	auto it = commandMap.find(com);
-	if (it != commandMap.end())
+	for (auto com = vec.begin() + 1; com != vec.end(); ++com)
 	{
-		printf("%s is a shell %s\n", com.c_str(), typeToStr(it->second.type).c_str());
-		return;
-	}
-	else
-	{
-		std::string dir_entry = findDirInPath(com);
-		if (dir_entry.length())
+		std::string env_p = p_env ? p_env : "";
+	
+		auto it = commandMap.find(*com);
+		if (it != commandMap.end())
 		{
-			std::cout << com << " is " << dir_entry << "\n";
-			return;
+			printf("%s is a shell %s\n", (*com).c_str(), typeToStr(it->second.type).c_str());
+			continue;
 		}
+		else
+		{
+			std::string dir_entry = findDirInPath(*com);
+			if (dir_entry.length())
+			{
+				std::cout << *com << " is " << dir_entry << "\n";
+				continue;
+			}
+		}
+		printf("%s: not found\n", (*com).c_str());
 	}
-	printf("%s: not found\n", com.c_str());
 }
 
 /////////////////////////////# MAIN #///////////////////////////////
@@ -162,6 +201,7 @@ int main()
 
 	initCommandMap();
 
+
 	p_env = std::getenv("PATH");
 	std::string env_p = p_env ? p_env : "";
 
@@ -171,32 +211,25 @@ int main()
 
 		std::string input;
 		std::getline(std::cin, input);
-		std::stringstream ss(input);
-		std::string word;
-		ss >> word;
+		input += '\0';
 
-		auto it = commandMap.find(word);
+		std::vector<std::string> args = parseArgs(input);
+
+		auto it = commandMap.find(args[0]);
 		if (it != commandMap.end())
 		{
-			it->second.cb(ss);
+			it->second.cb(args);
 		}
 		else
 		{
-			std::string arg;
-			std::vector<std::string> args;
 			std::vector<char *> c_args;
-
-			args.push_back(word);
-			while (ss >> arg)
-				args.push_back(arg);
-
 			for (const auto &a : args)
 				c_args.push_back(const_cast<char *>(a.c_str()));
 
-			std::string dir_entry = findDirInPath(word);
+			std::string dir_entry = findDirInPath(args[0]);
 			if (dir_entry.empty())
 			{
-				std::cout << word << ": command not found\n";
+				std::cout << args[0] << ": command not found\n";
 				continue;
 			}
 
