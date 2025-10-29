@@ -102,8 +102,11 @@ std::vector<std::string> parseArgs(std::string &line)
 	{
 		if (*it == ' ' || *it == '\0')
 		{
-			args.push_back(arg);
-			arg = "";
+			if (!arg.empty())
+			{
+				args.push_back(arg);
+				arg.clear();
+			}
 		}
 		else if (*it == '\'')
 		{
