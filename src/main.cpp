@@ -132,6 +132,7 @@ std::vector<std::string> parseArgs(std::string &line)
 			arg += *it;
 	}
 	return args;
+	
 }
 
 /////////////////////////////# METHODS #///////////////////////////////
