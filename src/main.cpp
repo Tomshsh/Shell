@@ -111,8 +111,8 @@ std::vector<std::string> parseArgs(std::string &line)
 		else if (*it == '\'')
 		{
 			size_t startPos = it - line.begin() + 1;  // skip the character in check
-			size_t endPos = line.rfind('\'');
-			if (endPos == startPos -1)
+			size_t endPos = line.find('\'', startPos);
+			if (endPos == std::string::npos)
 			{
 				arg += *it;
 				continue;
