@@ -98,37 +98,38 @@ std::vector<std::string> parseArgs(std::string &line)
 {
 	std::string arg;
 	std::vector<std::string> args;
+	bool inDoubleQuotes = false;
 	for (auto it = line.begin(); it != line.end(); ++it)
 	{
-		if (*it == ' ' || *it == '\0')
+		if (!inDoubleQuotes)
 		{
-			if (!arg.empty())
+			if (*it == ' ' || *it == '\0')
 			{
-				args.push_back(arg);
-				arg.clear();
+				if (!arg.empty())
+				{
+					args.push_back(arg);
+					arg.clear();
+				}
+			}
+			else if (*it == '\'')
+			{
+				size_t startPos = it - line.begin() + 1; // skip the character in check
+				size_t endPos = line.find('\'', startPos);
+				if (endPos == std::string::npos)
+				{
+					arg += *it;
+					continue;
+				}
+				arg += line.substr(startPos, endPos - startPos);
+				it = line.begin() + endPos; // now *it == '\'', but next iteration will set it to one character after
 			}
 		}
-		else if (*it == '\'' || *it == '\"')
-		{
-			char c = *it;
-			size_t startPos = it - line.begin() + 1;  // skip the character in check
-			size_t endPos = line.find(c, startPos);
-			if (endPos == std::string::npos)
-			{
-				arg += *it;
-				continue;
-			}
-			arg += line.substr(startPos, endPos - startPos);
-			it = line.begin() + endPos;   // now *it == '\'', but next iteration will set it to one character after
-		}
+		if (*it == '\"')
+			inDoubleQuotes = !inDoubleQuotes;
 		else if (*it == '\\')
-		{
 			arg += *(++it);
-		}
 		else
-		{
 			arg += *it;
-		}
 	}
 	return args;
 }
@@ -171,7 +172,7 @@ void handleType(std::vector<std::string> &vec)
 	for (auto com = vec.begin() + 1; com != vec.end(); ++com)
 	{
 		std::string env_p = p_env ? p_env : "";
-	
+
 		auto it = commandMap.find(*com);
 		if (it != commandMap.end())
 		{
@@ -208,7 +209,6 @@ int main()
 	std::cerr << std::unitbuf;
 
 	initCommandMap();
-
 
 	p_env = std::getenv("PATH");
 	std::string env_p = p_env ? p_env : "";
