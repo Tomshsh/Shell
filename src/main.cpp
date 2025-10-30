@@ -256,6 +256,7 @@ int main()
 			else if (pid == 0)
 			{
 				execvp(dir_entry.c_str(), c_args.data());
+				printf("%s \n", dir_entry.c_str());
 				perror("execvp failed");
 				exit(1);
 			}
