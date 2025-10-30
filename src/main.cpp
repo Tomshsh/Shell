@@ -98,6 +98,7 @@ std::vector<std::string> parseArgs(std::string &line)
 {
 	std::string arg;
 	std::vector<std::string> args;
+	arg.clear();
 	bool inDoubleQuotes = false;
 	for (auto it = line.begin(); it != line.end(); ++it)
 	{
@@ -110,6 +111,7 @@ std::vector<std::string> parseArgs(std::string &line)
 					args.push_back(arg);
 					arg.clear();
 				}
+				continue;
 			}
 			else if (*it == '\'')
 			{
@@ -132,7 +134,7 @@ std::vector<std::string> parseArgs(std::string &line)
 			arg += *it;
 	}
 	return args;
-	
+
 }
 
 /////////////////////////////# METHODS #///////////////////////////////
