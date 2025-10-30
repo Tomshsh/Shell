@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <cstring>
 #include <sys/wait.h>
+#include <unordered_set>
 
 namespace fs = std::filesystem;
 
@@ -100,6 +101,7 @@ std::vector<std::string> parseArgs(std::string &line)
 	std::vector<std::string> args;
 	arg.clear();
 	bool inDoubleQuotes = false;
+	std::unordered_set<char> escapableChars = {'\'','$','\"','\\','\n','`'};
 	for (auto it = line.begin(); it != line.end(); ++it)
 	{
 		if (!inDoubleQuotes)
@@ -115,7 +117,7 @@ std::vector<std::string> parseArgs(std::string &line)
 			}
 			else if (*it == '\'')
 			{
-				size_t startPos = it - line.begin() + 1; // skip the character in check
+				size_t startPos = it - line.begin() + 1; 							// skip the character in check
 				size_t endPos = line.find('\'', startPos);
 				if (endPos == std::string::npos)
 				{
@@ -123,14 +125,18 @@ std::vector<std::string> parseArgs(std::string &line)
 					continue;
 				}
 				arg += line.substr(startPos, endPos - startPos);
-				it = line.begin() + endPos; // now *it == '\'', but next iteration will set it to one character after
+				it = line.begin() + endPos; 										// now *it == '\'', but next iteration will set it to one character after
 				continue;
 			}
 		}
 		if (*it == '\"')
 			inDoubleQuotes = !inDoubleQuotes;
 		else if (*it == '\\')
+		{
+			if (inDoubleQuotes && escapableChars.count(*(it + 1)) == 0) 
+				arg += *it;															// if in quotes andnext char not escapable, insert both
 			arg += *(++it);
+		}
 		else
 			arg += *it;
 	}
