@@ -124,6 +124,7 @@ std::vector<std::string> parseArgs(std::string &line)
 				}
 				arg += line.substr(startPos, endPos - startPos);
 				it = line.begin() + endPos; // now *it == '\'', but next iteration will set it to one character after
+				continue;
 			}
 		}
 		if (*it == '\"')
