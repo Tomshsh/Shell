@@ -71,7 +71,7 @@ std::vector<std::string> split(std::string str, std::string delim)
 	return arr;
 }
 
-std::string findDirInPath(std::string word)
+fs::path findDirInPath(std::string word)
 {
 	std::string env_p(p_env);
 	std::vector<std::string> split_path = split(env_p, path_delimiter);
@@ -87,7 +87,7 @@ std::string findDirInPath(std::string word)
 			{
 				if (access(dir_entry.path().c_str(), X_OK) != 0)
 					continue; // is not executable
-				return dir_entry.path().c_str();
+				return dir_entry.path();
 			}
 		}
 	}
@@ -190,7 +190,7 @@ void handleType(std::vector<std::string> &vec)
 		}
 		else
 		{
-			std::string dir_entry = findDirInPath(*com);
+			std::string dir_entry = findDirInPath(*com).c_str();
 			if (dir_entry.length())
 			{
 				std::cout << *com << " is " << dir_entry << "\n";
@@ -228,10 +228,12 @@ int main()
 
 		std::string input;
 		std::getline(std::cin, input);
+		
+		if (input.empty())
+			continue;
+		
 		input += '\0';
-
 		std::vector<std::string> args = parseArgs(input);
-
 		auto it = commandMap.find(args[0]);
 		if (it != commandMap.end())
 		{
@@ -243,28 +245,14 @@ int main()
 			for (const auto &a : args)
 				c_args.push_back(const_cast<char *>(a.c_str()));
 
-			std::string dir_entry = findDirInPath(args[0]);
+			std::string dir_entry = findDirInPath(args[0]).filename();
 			if (dir_entry.empty())
 			{
 				std::cout << args[0] << ": command not found\n";
 				continue;
 			}
 
-			pid_t pid = fork();
-			if (pid == -1)
-				printf("fork failed\n");
-			else if (pid == 0)
-			{
-				execvp(dir_entry.c_str(), c_args.data());
-				perror("execvp failed (dir underneath)");
-				printf("\"%s\" \n", dir_entry.c_str());
-				exit(1);
-			}
-			else
-			{
-				int status;
-				waitpid(pid, &status, 0);
-			}
+			std::system(input.c_str());
 		}
 	}
 }
