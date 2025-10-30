@@ -101,7 +101,7 @@ std::vector<std::string> parseArgs(std::string &line)
 	std::vector<std::string> args;
 	arg.clear();
 	bool inDoubleQuotes = false;
-	std::unordered_set<char> escapableChars = {'\'','$','\"','\\','\n','`'};
+	std::unordered_set<char> escapableChars = {'$','\"','\\','\n','`'};
 	for (auto it = line.begin(); it != line.end(); ++it)
 	{
 		if (!inDoubleQuotes)
