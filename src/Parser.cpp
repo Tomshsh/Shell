@@ -62,7 +62,6 @@ void Parser::nextLine()
 
             if (!args.empty() && _command == nullptr)
                 _command = std::make_unique<Command>(args);
-                
         }
         else if (arg == "|")
         {
@@ -79,5 +78,6 @@ void Parser::nextLine()
 void Parser::runCommand()
 {
     nextLine();
-    _command->run();
+    if (_command != nullptr)
+        _command->run();
 }
