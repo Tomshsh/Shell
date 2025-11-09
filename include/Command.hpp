@@ -1,6 +1,6 @@
 #include <iostream>
 #include <unistd.h>
-#include <span>
+#include <functional>
 #include <Redir.hpp>
 #include <unordered_map>
 #include <vector>
