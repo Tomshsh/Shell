@@ -15,6 +15,8 @@ add_library(parser src/Parser.cpp)
 target_include_directories(parser PUBLIC include)
 target_compile_features(parser PUBLIC cxx_std_23)
 
+target_link_libraries(parser PUBLIC command)  # ← parser depends on command
+
 # Create executable (list files explicitly, excluding Command.cpp and Parser.cpp)
 add_executable(shell 
     src/main.cpp
