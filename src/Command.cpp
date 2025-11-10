@@ -81,7 +81,7 @@ void handleType(std::vector<std::string> &vec)
 		auto it = builtins.find(*com);
 		if (it != builtins.end())
 		{
-			printf("%s is a shell buitin\n", com->c_str());
+			printf("%s is a shell builtin\n", com->c_str());
 			continue;
 		}
 		else
