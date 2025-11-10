@@ -1,6 +1,7 @@
 #include <Command.hpp>
 #include <fstream>
-#include <string>
+#include <string.h>
+#include <sys/wait.h>
 
 std::vector<std::string> split(std::string str, std::string delim)
 {
