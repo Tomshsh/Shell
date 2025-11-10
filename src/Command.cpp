@@ -137,21 +137,19 @@ void Command::run()
 		printf("fork failed\n");
 	else if (pid == 0)
 	{
-		close(out_pipe[0]);
-		close(err_pipe[0]);
-		dup2(out_pipe[1], STDOUT_FILENO);
-		dup2(err_pipe[1], STDERR_FILENO);
-		close(out_pipe[1]);
-		close(err_pipe[1]);
-
 		auto it = builtins.find(_argv[0]);
 		if (it != builtins.end())
-		{
-			it->second(_argv);
 			exit(1);
-		}
 		else
 		{
+
+			close(out_pipe[0]);
+			close(err_pipe[0]);
+			dup2(out_pipe[1], STDOUT_FILENO);
+			dup2(err_pipe[1], STDERR_FILENO);
+			close(out_pipe[1]);
+			close(err_pipe[1]);
+
 			std::vector<char *> c_args;
 			for (const auto &a : _argv)
 				c_args.push_back(const_cast<char *>(a.c_str()));
@@ -172,19 +170,36 @@ void Command::run()
 	}
 	else
 	{
+		auto it = builtins.find(_argv[0]);
+		if (it != builtins.end())
+		{
+			int saved_out = dup(STDOUT_FILENO);
+			int saved_err = dup(STDERR_FILENO);
+
+			dup2(out_pipe[1], STDOUT_FILENO);
+			dup2(err_pipe[1], STDERR_FILENO);
+
+			it->second(_argv);
+
+			fflush(stdout);
+			fflush(stderr);
+			dup2(saved_out, STDOUT_FILENO);
+			dup2(saved_err, STDERR_FILENO);
+			close(saved_out);
+			close(saved_err);
+		}
 		close(out_pipe[1]);
 		close(err_pipe[1]);
 
-		for (auto& redir : _redirs)
+		for (auto &redir : _redirs)
 			redir->redirectInput(out_pipe[0], err_pipe[0]);
 
 		drainAndPrint(out_pipe[0], std::cout);
-		
+
 		drainAndPrint(err_pipe[0], std::cerr);
 
 		close(out_pipe[0]);
 		close(err_pipe[0]);
-
 
 		int status;
 		waitpid(pid, &status, 0);
