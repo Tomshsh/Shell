@@ -151,8 +151,8 @@ void Command::run()
 			std::string dir_entry = findDirInPath(_argv[0]);
 			if (dir_entry.empty())
 			{
-				std::cout << _argv[0] << ": command not found\n";
-				return;
+				std::cerr << _argv[0] << ": command not found\n";
+				exit(1);
 			}
 
 			execv(dir_entry.c_str(), c_args.data());
