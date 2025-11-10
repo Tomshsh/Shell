@@ -97,6 +97,15 @@ void handleType(std::vector<std::string> &vec)
 	}
 }
 
+void drainAndPrint(int fd, std::ostream &out)
+{
+	char buffer[4096];
+	ssize_t bytes_read;
+
+	while ((bytes_read = read(fd, buffer, sizeof(buffer))) > 0)
+		out.write(buffer, bytes_read);
+}
+
 std::unordered_map<std::string, std::function<void(std::vector<std::string> &)>> builtins = {
 	{"exit", handleExit},
 	{"echo", handleEcho},
@@ -169,20 +178,9 @@ void Command::run()
 		for (auto& redir : _redirs)
 			redir->redirectInput(out_pipe[0], err_pipe[0]);
 
-		std::string output;
-		char buffer[4096];
-		ssize_t bytes_read;
-
-		while ((bytes_read = read(out_pipe[0], buffer, sizeof(buffer))) > 0)
-			output.append(buffer, bytes_read);
+		drainAndPrint(out_pipe[0], std::cout);
 		
-		std::cout << output;
-		output.clear();
-		
-		while ((bytes_read = read(err_pipe[0], buffer, sizeof(buffer))) > 0)
-			output.append(buffer, bytes_read);
-		
-		std::cerr << output;
+		drainAndPrint(err_pipe[0], std::cerr);
 
 		close(out_pipe[0]);
 		close(err_pipe[0]);
