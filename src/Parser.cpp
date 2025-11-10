@@ -51,7 +51,7 @@ void Parser::nextLine()
     std::vector<std::string> args;
     for (auto arg = nextArg(); !arg.empty(); arg = nextArg())
     {
-        if (arg == ">" || arg == "1>" || arg == "2>")
+        if (arg == ">" || arg == "1>" || arg == "2>" || arg == ">>" || arg == "1>>" || arg == "2>>")
         {
             if (!args.empty() && _command == nullptr)
                 _command = std::make_unique<Command>(args);
