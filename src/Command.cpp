@@ -1,12 +1,11 @@
 #include <Command.hpp>
-#include <string.h>
-#include <sys/wait.h>
+#include <fstream>
 
 std::vector<std::string> split(std::string str, std::string delim)
 {
 	std::vector<std::string> arr;
 	char *d_str = (char *)str.data();
-    char *d_delim = (char *)delim.data();
+	char *d_delim = (char *)delim.data();
 	char *tok = strtok(d_str, d_delim);
 
 	while (tok != NULL)
@@ -92,86 +91,102 @@ void handleType(std::vector<std::string> &vec)
 				continue;
 			}
 		}
-		printf("%s: not found\n", com->c_str());
+		std::cerr << *com << ": not found\n";
 	}
 }
 
 std::unordered_map<std::string, std::function<void(std::vector<std::string> &)>> builtins = {
-    {"exit", handleExit},
-    {"echo", handleEcho},
-    {"type", handleType}
-};
+	{"exit", handleExit},
+	{"echo", handleEcho},
+	{"type", handleType}};
 
 Command::Command() {}
 
 void Command::attachRedir(std::string direction, std::string directory)
 {
-    _redirs.push_back(new Redir(direction, directory));
+	_redirs.push_back(std::make_unique<Redir>(direction, directory));
 }
 
 void Command::run()
 {
 	if (_argv[0].empty())
 		return;
-    auto it = builtins.find(_argv[0]);
-    if (it != builtins.end())
-    {
-        it->second(_argv);
-    }
-    else
-    {
-        std::vector<char *> c_args;
-        for (const auto &a : _argv)
-            c_args.push_back(const_cast<char *>(a.c_str()));
-        c_args.push_back(nullptr);
 
-        std::string dir_entry = findDirInPath(_argv[0]);
-        if (dir_entry.empty())
-        {
-            std::cout << _argv[0] << ": command not found\n";
-            return;
-        }
+	int out_pipe[2], err_pipe[2];
+	if (pipe(out_pipe) == -1)
+	{
+		perror("pipe failed");
+		return;
+	}
+	if (pipe(err_pipe) == -1)
+		perror("error pipe failed");
 
-        int pipefd[2];
-		if (pipe(pipefd) == -1)
+	pid_t pid = fork();
+	if (pid == -1)
+		printf("fork failed\n");
+	else if (pid == 0)
+	{
+		close(out_pipe[0]);
+		close(err_pipe[0]);
+		dup2(out_pipe[1], STDOUT_FILENO);
+		dup2(err_pipe[1], STDERR_FILENO);
+		close(out_pipe[1]);
+		close(err_pipe[1]);
+
+		auto it = builtins.find(_argv[0]);
+		if (it != builtins.end())
 		{
-			perror("pipe failed");
-			return;
+			it->second(_argv);
+			exit(1);
 		}
+		else
+		{
+			std::vector<char *> c_args;
+			for (const auto &a : _argv)
+				c_args.push_back(const_cast<char *>(a.c_str()));
+			c_args.push_back(nullptr);
 
-        char buf;
-        pid_t pid = fork();
-        if (pid == -1)
-            printf("fork failed\n");
-        else if (pid == 0)
-        {
-            close(pipefd[0]);
-            dup2(pipefd[1], STDOUT_FILENO);
-			dup2(pipefd[1], STDERR_FILENO);
-            close(pipefd[1]);
+			std::string dir_entry = findDirInPath(_argv[0]);
+			if (dir_entry.empty())
+			{
+				std::cout << _argv[0] << ": command not found\n";
+				return;
+			}
 
-            execv(dir_entry.c_str(), c_args.data());
-            perror("execv failed (dir underneath)");
-            printf("\"%s\" \n", dir_entry.c_str());
-            exit(1);
-        }
-        else
-        {
-            close(pipefd[1]);
+			execv(dir_entry.c_str(), c_args.data());
+			perror("execvp failed (dir underneath)");
+			printf("\"%s\" \n", dir_entry.c_str());
+			exit(1);
+		}
+	}
+	else
+	{
+		close(out_pipe[1]);
+		close(err_pipe[1]);
 
-            std::string output;
-            char buffer[4096];
-            ssize_t bytes_read;
+		for (auto& redir : _redirs)
+			redir->redirectInput(out_pipe[0], err_pipe[0]);
 
-            while ((bytes_read = read(pipefd[0], &buffer, sizeof(buffer))) > 0)
-                output.append(buffer, bytes_read);
+		std::string output;
+		char buffer[4096];
+		ssize_t bytes_read;
 
-            close(pipefd[0]);
+		while ((bytes_read = read(out_pipe[0], buffer, sizeof(buffer))) > 0)
+			output.append(buffer, bytes_read);
+		
+		std::cout << output;
+		output.clear();
+		
+		while ((bytes_read = read(err_pipe[0], buffer, sizeof(buffer))) > 0)
+			output.append(buffer, bytes_read);
+		
+		std::cerr << output;
 
-            std::cout << output << "\n";
+		close(out_pipe[0]);
+		close(err_pipe[0]);
 
-            int status;
-            waitpid(pid, &status, 0);
-        }
-    }
+
+		int status;
+		waitpid(pid, &status, 0);
+	}
 }

@@ -29,14 +29,13 @@ class Command {
     private:
         std::vector<std::string> _argv;
         int _pipefd[2];
-        std::vector<Redir *> _redirs;
+        std::vector<std::unique_ptr<Redir>> _redirs;
 
         
     public:
         Command();
         Command(std::vector<std::string> argv){
             _argv = argv;
-            _redirs = {};
         }
         // Command(const char* arg, std::span<const char* const> argv, int pipefd[2]): _arg(arg), _argv(argv), _pipefd(pipefd), _redirs({}){}
 

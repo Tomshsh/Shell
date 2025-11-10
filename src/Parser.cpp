@@ -53,15 +53,15 @@ void Parser::nextLine()
     {
         if (arg == ">" || arg == "1>" || arg == "2>")
         {
+            if (!args.empty() && _command == nullptr)
+                _command = std::make_unique<Command>(args);
+
             auto next_arg = nextArg();
             if (!next_arg.empty())
             {
                 _command->attachRedir(arg, next_arg);
                 continue;
             }
-
-            if (!args.empty() && _command == nullptr)
-                _command = std::make_unique<Command>(args);
         }
         else if (arg == "|")
         {
