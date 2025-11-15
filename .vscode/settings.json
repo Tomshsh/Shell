@@ -65,6 +65,9 @@
         "algorithm": "cpp",
         "filesystem": "cpp",
         "unordered_set": "cpp",
-        "fstream": "cpp"
+        "fstream": "cpp",
+        "__hash_table": "cpp",
+        "__tree": "cpp",
+        "map": "cpp"
     }
 }

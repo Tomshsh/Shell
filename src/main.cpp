@@ -9,6 +9,7 @@
 #include <cstring>
 #include <sys/wait.h>
 #include <Parser.hpp>
+#include <readline/readline.h>
 
 namespace fs = std::filesystem;
 
@@ -38,13 +39,12 @@ int main()
 
 	while (true)
 	{
-		std::cout << "$ ";
-
-		std::string input;
-		getline(std::cin, input);
-
+		rl_attempted_completion_function = Parser::character_name_completion;
+		
+		std::string input = readline("$ ");
+		
 		input += '\0';
-
+		
 		Parser parser(input);
 		parser.runCommand();
 	}

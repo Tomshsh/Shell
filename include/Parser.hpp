@@ -17,4 +17,6 @@ class Parser{
     public:
         Parser(std::string line): _line(std::move(line)), _it(_line.begin()){}
         void runCommand();
+        static char **character_name_completion(const char*, int, int);
+        static char *command_name_generator(const char *, int state);
 };
