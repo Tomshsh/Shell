@@ -41,8 +41,8 @@ char *Parser::command_name_generator(const char *text, int state)
 
         for (; dir_it != dir_end; dir_it++)
         {
-            if (access(dir_it->path().c_str(), X_OK) != 0)
-                continue; // is not executable
+            // if (access(dir_it->path().c_str(), X_OK) != 0)
+            //     continue; // is not executable
             if (dir_it->path().filename().string().find(text) == 0)
             {
                 char *str = strdup(dir_it->path().filename().c_str());
