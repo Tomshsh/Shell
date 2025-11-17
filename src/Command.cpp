@@ -2,6 +2,7 @@
 #include <fstream>
 #include <string.h>
 #include <sys/wait.h>
+#include <sstream>
 
 std::vector<std::string> split(std::string str, std::string delim)
 {
@@ -69,8 +70,15 @@ void handleExit(std::vector<std::string> &vec)
 
 void handleEcho(std::vector<std::string> &vec)
 {
-	for (auto it = vec.begin() + 1; it < vec.end(); ++it)
-		std::cout << *it << ' ';
+	auto it = vec.begin() + 1;
+	if (it == vec.end())
+		return;
+		
+	std::cout << *it;
+	++it;
+
+	for (; it < vec.end(); ++it)
+		std::cout << ' ' << *it;
 	std::cout << "\n";
 }
 
@@ -140,6 +148,10 @@ void Command::run(int out_read)
 		dup2(out_pipe[1], STDOUT_FILENO);
 		dup2(err_pipe[1], STDERR_FILENO);
 
+		std::stringstream ss;
+		drainAndWrite(out_read, ss);
+		close(out_read);
+
 		it->second(_argv);
 
 		fflush(stdout);
@@ -152,10 +164,10 @@ void Command::run(int out_read)
 	else
 	{
 		pid = fork();
-	if (pid == -1)
-		printf("fork failed\n");
-	else if (pid == 0)
-	{
+		if (pid == -1)
+			printf("fork failed\n");
+		else if (pid == 0)
+		{
 			close(out_pipe[0]);
 			close(err_pipe[0]);
 			dup2(out_pipe[1], STDOUT_FILENO);
@@ -185,7 +197,7 @@ void Command::run(int out_read)
 	}
 
 	if (pid > 0)
-		{
+	{
 		close(out_pipe[1]);
 		close(err_pipe[1]);
 
