@@ -106,8 +106,9 @@ void Parser::nextLine()
     {
         if (arg == ">" || arg == "1>" || arg == "2>" || arg == ">>" || arg == "1>>" || arg == "2>>")
         {
-            if (!args.empty() && _command == nullptr)
-                _command = std::make_unique<Command>(args);
+            if (!args.empty())
+                _command->setOrAppendCommand(args);
+            args.clear();
 
             auto next_arg = nextArg();
             if (!next_arg.empty())
@@ -121,10 +122,8 @@ void Parser::nextLine()
         }
         args.push_back(arg);
     }
-    if (args.empty())
-        args.push_back("\0");
-
-    if (_command == nullptr)
+    
+    if (!args.empty())
         _command = std::make_unique<Command>(args);
 }
 
