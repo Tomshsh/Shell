@@ -111,9 +111,7 @@ std::unordered_map<std::string, std::function<void(std::vector<std::string> &)>>
 	{"echo", handleEcho},
 	{"type", handleType}};
 
-Command::Command() {}
-
-void Command::attachRedir(std::string direction, std::string directory)
+void Command::attachRedir(std::string &direction, std::string &directory)
 {
 	_redirs.push_back(std::make_unique<Redir>(direction, directory));
 }

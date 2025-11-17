@@ -24,24 +24,36 @@ void handleEcho(std::vector<std::string> &vec);
 
 void handleType(std::vector<std::string> &vec);
 
-class Command {
+class Command
+{
 
-    private:
-        std::vector<std::string> _argv;
-        int _pipefd[2];
-        std::vector<std::unique_ptr<Redir>> _redirs;
+private:
+    std::vector<std::string> _argv;
+    int _pipefd[2];
+    std::vector<std::unique_ptr<Redir>> _redirs;
+    std::unique_ptr<Command> _next;
 
-        
-    public:
-        Command();
-        Command(std::vector<std::string> argv){
+public:
+    Command() = default;
+    Command(std::vector<std::string> argv): _argv(std::move(argv)), _next(nullptr){};
+
+    void attachRedir(std::string& direction, std::string& directory);
+    void setOrAppendCommand(std::vector<std::string>& argv)
+    {
+        if (_argv.empty())
+        {
             _argv = argv;
+            return;
         }
-        // Command(const char* arg, std::span<const char* const> argv, int pipefd[2]): _arg(arg), _argv(argv), _pipefd(pipefd), _redirs({}){}
 
-        void attachRedir(std::string direction, std::string directory);
+        Command *current = this;
+        while(current->_next != nullptr)
+            current = current->_next.get();
 
-        void run();
+        current->_next = std::make_unique<Command>(argv);
+    }
+
+    void run();
 };
 
 #endif
