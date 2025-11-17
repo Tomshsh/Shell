@@ -97,7 +97,7 @@ void handleType(std::vector<std::string> &vec)
 	}
 }
 
-void drainAndPrint(int fd, std::ostream &out)
+void drainAndWrite(int fd, std::ostream &out)
 {
 	char buffer[4096];
 	ssize_t bytes_read;
@@ -116,8 +116,9 @@ void Command::attachRedir(std::string &direction, std::string &directory)
 	_redirs.push_back(std::make_unique<Redir>(direction, directory));
 }
 
-void Command::run()
+void Command::run(int out_read)
 {
+	pid_t pid = 1;
 	if (_argv[0].empty())
 		return;
 
@@ -130,23 +131,39 @@ void Command::run()
 	if (pipe(err_pipe) == -1)
 		perror("error pipe failed");
 
-	pid_t pid = fork();
+	auto it = builtins.find(_argv[0]);
+	if (it != builtins.end())
+	{
+		int saved_out = dup(STDOUT_FILENO);
+		int saved_err = dup(STDERR_FILENO);
+
+		dup2(out_pipe[1], STDOUT_FILENO);
+		dup2(err_pipe[1], STDERR_FILENO);
+
+		it->second(_argv);
+
+		fflush(stdout);
+		fflush(stderr);
+		dup2(saved_out, STDOUT_FILENO);
+		dup2(saved_err, STDERR_FILENO);
+		close(saved_out);
+		close(saved_err);
+	}
+	else
+	{
+		pid = fork();
 	if (pid == -1)
 		printf("fork failed\n");
 	else if (pid == 0)
 	{
-		auto it = builtins.find(_argv[0]);
-		if (it != builtins.end())
-			exit(1);
-		else
-		{
-
 			close(out_pipe[0]);
 			close(err_pipe[0]);
 			dup2(out_pipe[1], STDOUT_FILENO);
 			dup2(err_pipe[1], STDERR_FILENO);
+			dup2(out_read, STDIN_FILENO);
 			close(out_pipe[1]);
 			close(err_pipe[1]);
+			close(out_read);
 
 			std::vector<char *> c_args;
 			for (const auto &a : _argv)
@@ -166,35 +183,20 @@ void Command::run()
 			exit(1);
 		}
 	}
-	else
-	{
-		auto it = builtins.find(_argv[0]);
-		if (it != builtins.end())
+
+	if (pid > 0)
 		{
-			int saved_out = dup(STDOUT_FILENO);
-			int saved_err = dup(STDERR_FILENO);
-
-			dup2(out_pipe[1], STDOUT_FILENO);
-			dup2(err_pipe[1], STDERR_FILENO);
-
-			it->second(_argv);
-
-			fflush(stdout);
-			fflush(stderr);
-			dup2(saved_out, STDOUT_FILENO);
-			dup2(saved_err, STDERR_FILENO);
-			close(saved_out);
-			close(saved_err);
-		}
 		close(out_pipe[1]);
 		close(err_pipe[1]);
 
 		for (auto &redir : _redirs)
 			redir->redirectInput(out_pipe[0], err_pipe[0]);
 
-		drainAndPrint(out_pipe[0], std::cout);
+		if (_next != nullptr)
+			_next->run(out_pipe[0]);
 
-		drainAndPrint(err_pipe[0], std::cerr);
+		drainAndWrite(out_pipe[0], std::cout);
+		drainAndWrite(err_pipe[0], std::cerr);
 
 		close(out_pipe[0]);
 		close(err_pipe[0]);

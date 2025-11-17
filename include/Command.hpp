@@ -53,7 +53,7 @@ public:
         current->_next = std::make_unique<Command>(argv);
     }
 
-    void run();
+    void run(int out_read = -1);
 };
 
 #endif

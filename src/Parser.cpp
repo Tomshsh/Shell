@@ -42,7 +42,7 @@ char *Parser::command_name_generator(const char *text, int state)
         for (; dir_it != dir_end; dir_it++)
         {
             if (access(dir_it->path().c_str(), X_OK) != 0)
-                continue; 
+                continue;
             if (dir_it->path().filename().string().find(text) == 0)
             {
                 char *str = strdup(dir_it->path().filename().c_str());
@@ -119,12 +119,20 @@ void Parser::nextLine()
         }
         else if (arg == "|")
         {
+            if (!args.empty())
+                _command->setOrAppendCommand(args);
+            args.clear();
+            continue;
         }
         args.push_back(arg);
     }
-    
+
+    if (args.empty())
+        args.push_back("\0");
     if (!args.empty())
-        _command = std::make_unique<Command>(args);
+    {
+        _command->setOrAppendCommand(args);
+    }
 }
 
 void Parser::runCommand()
