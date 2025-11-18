@@ -5,6 +5,8 @@
 #include <unordered_map>
 #include <vector>
 #include <filesystem>
+#include <readline/readline.h>
+#include <readline/history.h>
 
 // Command.hpp
 #ifndef COMMAND_HPP
@@ -23,6 +25,8 @@ void handleExit(std::vector<std::string> &vec);
 void handleEcho(std::vector<std::string> &vec);
 
 void handleType(std::vector<std::string> &vec);
+
+void handleHistory(std::vector<std::string>);
 
 class Command
 {

@@ -73,7 +73,7 @@ void handleEcho(std::vector<std::string> &vec)
 	auto it = vec.begin() + 1;
 	if (it == vec.end())
 		return;
-		
+
 	std::cout << *it;
 	++it;
 
@@ -105,6 +105,13 @@ void handleType(std::vector<std::string> &vec)
 	}
 }
 
+void handleHistory(std::vector<std::string>)
+{
+	HISTORY_STATE *state = history_get_history_state();
+	for (int i = 0; i < state->length; i++)
+		printf("%s\n", history_get(history_base + i)->line);
+}
+
 void drainAndWrite(int fd, std::ostream &out)
 {
 	char buffer[4096];
@@ -117,7 +124,8 @@ void drainAndWrite(int fd, std::ostream &out)
 std::unordered_map<std::string, std::function<void(std::vector<std::string> &)>> builtins = {
 	{"exit", handleExit},
 	{"echo", handleEcho},
-	{"type", handleType}};
+	{"type", handleType},
+	{"history", handleHistory}};
 
 void Command::attachRedir(std::string &direction, std::string &directory)
 {
