@@ -109,7 +109,7 @@ void handleHistory(std::vector<std::string>)
 {
 	HISTORY_STATE *state = history_get_history_state();
 	for (int i = 0; i < state->length; i++)
-		printf("%s\n", history_get(history_base + i)->line);
+		printf("%4d  %s\n", i+1, history_get(history_base + i)->line);
 }
 
 void drainAndWrite(int fd, std::ostream &out)
