@@ -108,9 +108,22 @@ void handleType(std::vector<std::string> &vec)
 void handleHistory(std::vector<std::string> &vec)
 {
 	HISTORY_STATE *state = history_get_history_state();
-	int i = vec.size() > 1 ? state->length - std::stoi(vec.at(1)) : 0;
-	for (; i < state->length; i++)
-		printf("%4d  %s\n", i + 1, history_get(history_base + i)->line);
+
+	if (vec.size() > 2)
+	{
+		if (vec.at(1) == "-r")
+		{
+			std::ifstream file(vec.at(2));
+			std::string line;
+			while (std::getline(file, line))
+				add_history(line.data());
+			return;
+		}
+
+		int i = vec.size() > 1 ? state->length - std::stoi(vec.at(1)) : 0;
+		for (; i < state->length; i++)
+			printf("%4d  %s\n", i + 1, history_get(history_base + i)->line);
+	}
 }
 
 void drainAndWrite(int fd, std::ostream &out)

@@ -28,7 +28,11 @@ int main()
 
 		input += '\0';
 
+		if (input.size() < 2)
+			continue;
+
 		add_history(input.data());
+
 		Parser parser(input);
 		parser.runCommand();
 	}
