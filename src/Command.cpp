@@ -105,11 +105,12 @@ void handleType(std::vector<std::string> &vec)
 	}
 }
 
-void handleHistory(std::vector<std::string>)
+void handleHistory(std::vector<std::string> &vec)
 {
 	HISTORY_STATE *state = history_get_history_state();
-	for (int i = 0; i < state->length; i++)
-		printf("%4d  %s\n", i+1, history_get(history_base + i)->line);
+	int i = vec.size() > 1 ? state->length - std::stoi(vec.at(1)) : 0;
+	for (; i < state->length; i++)
+		printf("%4d  %s\n", i + 1, history_get(history_base + i)->line);
 }
 
 void drainAndWrite(int fd, std::ostream &out)

@@ -26,7 +26,7 @@ void handleEcho(std::vector<std::string> &vec);
 
 void handleType(std::vector<std::string> &vec);
 
-void handleHistory(std::vector<std::string>);
+void handleHistory(std::vector<std::string> &vec);
 
 class Command
 {
