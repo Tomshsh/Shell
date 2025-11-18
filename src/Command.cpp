@@ -116,14 +116,19 @@ void handleHistory(std::vector<std::string> &vec)
 			std::ifstream file(vec.at(2));
 			std::string line;
 			while (std::getline(file, line))
+			{
+				if (line.empty())
+					continue;
 				add_history(line.data());
+			}
 			return;
 		}
 
-		int i = vec.size() > 1 ? state->length - std::stoi(vec.at(1)) : 0;
-		for (; i < state->length; i++)
-			printf("%4d  %s\n", i + 1, history_get(history_base + i)->line);
 	}
+	
+	int i = vec.size() > 1 ? state->length - std::stoi(vec.at(1)) : 0;
+	for (; i < state->length; i++)
+		printf("%4d  %s\n", i + 1, history_get(history_base + i)->line);
 }
 
 void drainAndWrite(int fd, std::ostream &out)
