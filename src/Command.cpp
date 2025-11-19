@@ -158,7 +158,16 @@ void handleHistory(std::vector<std::string> &vec)
 		{
 			std::ofstream fb;
 			fb.open(vec.at(2));
-			int i = state->length - length;
+			for (int i = 0; i < state->length; i++)
+				fb << history_get(history_base + i)->line << '\n';
+			return;
+		}
+
+		if (vec.at(1) == "-a")
+		{
+			static int i = 0;
+			std::ofstream fb;
+			fb.open(vec.at(2), std::ios::app);
 			for (; i < state->length; i++)
 				fb << history_get(history_base + i)->line << '\n';
 			return;
