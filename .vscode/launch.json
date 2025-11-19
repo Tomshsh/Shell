@@ -8,7 +8,7 @@
         "args": [],
         "stopAtEntry": false,
         "cwd": "${fileDirname}",
-        "environment": [{"name": "PATH", "value": "$PATH:/tmp/owl"}],
+        "environment": [{"name": "PATH", "value": "$PATH:/tmp/owl"}, {"name":"HISTFILE", "value":"/Users/tomer.s/Desktop/projects/codecrafters-shell-cpp/build/text.txt"}],
         "externalConsole": true,
         "MIMode": "lldb"
     }
