@@ -3,6 +3,10 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <sstream>
+#include <ostream>
+#include <math.h>
+
+//////////////////////////////////////// UTILS ////////////////////////////////////////////////////////////////
 
 std::vector<std::string> split(std::string str, std::string delim)
 {
@@ -18,6 +22,19 @@ std::vector<std::string> split(std::string str, std::string delim)
 	}
 
 	return arr;
+}
+
+int extractIntVal(std::string &str)
+{
+	int val = 0;
+	for (int i = 0; i < str.length(); i++)
+	{
+		char ch = str.at(i);
+		if (!std::isdigit(static_cast<unsigned char>(ch)))
+			return sizeof(int);
+		val += pow(10, i) + (ch - '0') - 1;
+	}
+	return val;
 }
 
 fs::path findDirInPath(std::string word)
@@ -43,6 +60,17 @@ fs::path findDirInPath(std::string word)
 
 	return {};
 }
+
+void drainAndWrite(int fd, std::ostream &out)
+{
+	char buffer[4096];
+	ssize_t bytes_read;
+
+	while ((bytes_read = read(fd, buffer, sizeof(buffer))) > 0)
+		out.write(buffer, bytes_read);
+}
+
+//////////////////////////////////////// BUILTIN HANDLERS ////////////////////////////////////////
 
 void handleExit(std::vector<std::string> &vec)
 {
@@ -108,6 +136,8 @@ void handleType(std::vector<std::string> &vec)
 void handleHistory(std::vector<std::string> &vec)
 {
 	HISTORY_STATE *state = history_get_history_state();
+	std::streambuf *sb = std::cout.rdbuf();
+	int length = state->length;
 
 	if (vec.size() > 2)
 	{
@@ -124,20 +154,25 @@ void handleHistory(std::vector<std::string> &vec)
 			return;
 		}
 
+		if (vec.at(1) == "-w")
+		{
+			std::ofstream fb;
+			fb.open(vec.at(2));
+			int i = state->length - length;
+			for (; i < state->length; i++)
+				fb << history_get(history_base + i)->line << '\n';
+			return;
+		}
 	}
-	
-	int i = vec.size() > 1 ? state->length - std::stoi(vec.at(1)) : 0;
+	else if (vec.size() > 1)
+	{
+		int val = extractIntVal(vec.at(1));
+		length = val < length ? val : length;
+	}
+
+	int i = state->length - length;
 	for (; i < state->length; i++)
 		printf("%4d  %s\n", i + 1, history_get(history_base + i)->line);
-}
-
-void drainAndWrite(int fd, std::ostream &out)
-{
-	char buffer[4096];
-	ssize_t bytes_read;
-
-	while ((bytes_read = read(fd, buffer, sizeof(buffer))) > 0)
-		out.write(buffer, bytes_read);
 }
 
 std::unordered_map<std::string, std::function<void(std::vector<std::string> &)>> builtins = {
@@ -145,6 +180,8 @@ std::unordered_map<std::string, std::function<void(std::vector<std::string> &)>>
 	{"echo", handleEcho},
 	{"type", handleType},
 	{"history", handleHistory}};
+
+///////////////////////////////////////////////////// CLASS MEMBERS /////////////////////////////////////////////////////
 
 void Command::attachRedir(std::string &direction, std::string &directory)
 {
