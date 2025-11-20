@@ -184,11 +184,29 @@ void handleHistory(std::vector<std::string> &vec)
 		printf("%4d  %s\n", i + 1, history_get(history_base + i)->line);
 }
 
+void handlePwd(std::vector<std::string> &vec)
+{
+	auto pth = fs::current_path();
+	std::cout << pth.c_str() << '\n';
+}
+
+void handleCd(std::vector<std::string> &vec)
+{
+	std::string path = vec[1];
+	if (path == "~")
+		path = getenv("HOME");
+	fs::path pth(path);
+	if (fs::exists(pth))
+		fs::current_path(path);
+}
+
 std::unordered_map<std::string, std::function<void(std::vector<std::string> &)>> builtins = {
 	{"exit", handleExit},
 	{"echo", handleEcho},
 	{"type", handleType},
-	{"history", handleHistory}};
+	{"history", handleHistory},
+	{"pwd", handlePwd},
+	{"cd", handleCd}};
 
 ///////////////////////////////////////////////////// CLASS MEMBERS /////////////////////////////////////////////////////
 

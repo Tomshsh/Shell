@@ -28,6 +28,10 @@ void handleType(std::vector<std::string> &vec);
 
 void handleHistory(std::vector<std::string> &vec);
 
+void handlePwd(std::vector<std::string> &vec);
+
+void handleCd(std::vector<std::string> &vec);
+
 class Command
 {
 
