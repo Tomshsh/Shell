@@ -196,8 +196,12 @@ void handleCd(std::vector<std::string> &vec)
 	if (path == "~")
 		path = getenv("HOME");
 	fs::path pth(path);
-	if (fs::exists(pth))
-		fs::current_path(path);
+	if (!fs::exists(pth))
+	{
+		std::cerr << "cd: " << path << ": No such file or directory\n";
+		return;
+	}
+	fs::current_path(path);
 }
 
 std::unordered_map<std::string, std::function<void(std::vector<std::string> &)>> builtins = {
